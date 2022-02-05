@@ -39,7 +39,7 @@ class Vaccine {
         if (infectedPopPercent >= this.developmentStart) {
             if (this.developmentProgress < 100) {
                 this.developmentProgress += (this.developmentRate / 5);
-                document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + this.developmentProgress + "%";
+                document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + Math.round(this.developmentProgress) + "%";
             } else {
                 this.developmentProgress = 100;
                 if (dosecount == 0) {
@@ -86,8 +86,19 @@ class Person {
     }
 
     move() {
-        this.x += Math.random() * 4 - 1;
-        this.y += Math.random() * 4 - 1;
+        let canvas = document.getElementById("main");
+        this.x += Math.random() * 2 - 1;
+        this.y += Math.random() * 2 - 1;
+        if (this.x > canvas.width) {
+            x = 0;
+        } else if (this.x < 0) {
+            x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+        }
+        if (this.y > canvas.height) {
+            y = 0;
+        } else if (this.y < 0) {
+            y = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+        }
     }
 }
 
@@ -113,8 +124,11 @@ class Disease {
                         // attempting to infect uninfected neighbor:
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
+                        console.log("trying to infect");
+                        console.log(this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0));
                         if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0)) {
                             n.infected = true;
+                            console.log("infected");
                         }
                     }
                 }
@@ -127,7 +141,6 @@ class Disease {
                         p.immune = 1;
                     } else if (roll >= (100 - this.pDeath)) {
                         console.log("it should die");
-                        people.splice(i, 1);
                         p.infected = false;
                         p.dead = true;
                     }
@@ -139,7 +152,6 @@ class Disease {
                         p.infected = false;
                     } else if (roll >= (100 - (this.pDeath / 2))) {
                         console.log("it should die");
-                        people.splice(i, 1);
                         p.infected = false;
                         p.dead = true;
                     }
@@ -151,12 +163,11 @@ class Disease {
                         p.infected = false;
                     } else if (roll >= (100 - (this.pDeath / 4))) {
                         console.log("it should die");
-                        people.splice(i, 1);
                         p.infected = false;
                         p.dead = true;
                     }
                 }
-                //infectcount++;
+                infectcount++;
             }
             else if (p.dead) {
                 deathcount++;
@@ -265,8 +276,8 @@ setInterval(() => {
     for (let p of people) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
-        if (p.infected) ctx.fillStyle = "red";
-        else if (p.dead) ctx.fillStyle = "black";
+        if (p.dead) ctx.fillStyle = "grey";
+        else if (p.infected) ctx.fillStyle = "red";
         else ctx.fillStyle = "green";
         ctx.fill();
     }
