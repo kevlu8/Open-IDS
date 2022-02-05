@@ -1,7 +1,7 @@
 "use strict";
 
 const FPS = 15;
-const MAXINFECTDIST = 10; // (5, 5) = sqrt(50) in euclidean distance but 10 in manhattan distance
+const MAXINFECTDIST = 1000;
 const METRE = 20; //pixels
 let WIDTH, HEIGHT;
 
@@ -64,10 +64,11 @@ class Person {
 }
 
 class Disease {
-    constructor(pSpread, pRecovery, pDeath) {
+    constructor(pSpread, pRecovery, pDeath, auto=true) {
         this.pSpread = pSpread;
         this.pRecovery = pRecovery;
         this.pDeath = pDeath;
+        this.auto = auto;
     }
 
     async iter(people) {
@@ -84,8 +85,7 @@ class Disease {
                         // attempting to infect uninfected neighbor:
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
-                        console.log(currentSettings.pSpread * Math.max(-(p.getDistance(n) ** 2 / 25) + 1, 0))
-                        if (Math.random() * 100 <= currentSettings.pSpread * Math.max(-(p.getDistance(n) ** 2 / 25) + 1, 0)) {
+                        if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0)) {
                             n.infected = true;
                         }
                     }
@@ -136,8 +136,8 @@ async function main() {
 
 async function init() {
     let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.8;
-    HEIGHT = window.innerHeight * 0.9;
+    WIDTH = window.innerWidth;
+    HEIGHT = window.innerHeight;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     document.getElementById("iter").innerHTML = "";
@@ -171,7 +171,11 @@ async function startSimulation(stop=false) {
     }
 
     for (let p of people) {
-        p.closestNeighbours.push(people.filter(n => n.getDistance(p) < MAXINFECTDIST));
+        for (let n of people) {
+            if (p != n && p.getDistance(n) < MAXINFECTDIST) {
+                p.closestNeighbours.push(n);
+            }
+        }
     }
 
     vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
@@ -179,14 +183,7 @@ async function startSimulation(stop=false) {
 
     people[Math.round(Math.random() * people.length)].infected = true; // Patient Zero
     // Start the simulation
-    let sleepTime = 1000 / currentSettings.iterSpeed;
-    
-    while (!stop) {
-        await sleep(sleepTime);
-        await diseas.iter(people);
-        await vaccine.develop(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
-        //await draw();
-    }
+    autoSimulate();
 }
 
 //procing simulation
@@ -197,17 +194,12 @@ async function procSimulation() {
     await vaccine.develop(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
 }
 
-document.getElementById("start").addEventListener("click", () => {
-    if (document.getElementById("start").innerText == "Start") {
-        document.getElementById("start").innerText = "Stop";
-        init();
-        startSimulation();
-    } else {
-        document.getElementById("start").innerText = "Start";
-        startSimulation(true);
-        init();
+async function autoSimulate() {
+    while (diseas.auto) {
+        await sleep(1000 / currentSettings.iterSpeed);
+        procSimulation();
     }
-});
+}
 
 //updating drawing
 setInterval(() => {
@@ -224,5 +216,20 @@ setInterval(() => {
         ctx.fill();
     }
 }, 1000 / FPS);
-
 window.onload = init;
+
+//managing simulation
+document.getElementById("start").addEventListener("click", () => {
+    if (document.getElementById("start").innerText == "Start") {
+        document.getElementById("start").innerText = "Pause";
+        init();
+        startSimulation();
+    } else if (document.getElementById("start").innerText == "Pause") {
+        document.getElementById("start").innerText = "Resume";
+        diseas.auto = false;
+    } else if (document.getElementById("start").innerText == "Resume") {
+        document.getElementById("start").innerText = "Pause";
+        diseas.auto = true;
+        autoSimulate();
+    }
+});
