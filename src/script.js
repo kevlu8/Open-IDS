@@ -138,15 +138,22 @@ class Disease {
         this.pDeath = pDeath;
         this.auto = auto;
     }
-
+    
     async iter(people) {
-        infectcount = 0, deathcount = 0, vaccinecount = 0, vaccineprog = 0;
-        // People is an array of class Person
-        // Iterate over each person
-        // Actual infection rate is calculated as some function of distance and infection rate
-        for (let i in people) {
-            let p = people[i];
-            if (!p.dead) {
+        infectcount = 0, deathcount = 0, vaccinecount = 0, vaccineprog = 0; 
+    for (let p of people) { 
+            for (let n of people) { 
+                if (p != n && p.getDistance(n) < MAXINFECTDIST) { 
+                    p.closestNeighbours.push(n); 
+                } 
+            }
+        }
+        // People is an array of class Person 
+        // Iterate over each person 
+        // Actual infection rate is calculated a s some function of distance and infection rate
+        for (let i in people) { 
+            let p = people[i]; 
+            if (!p.dead) { 
                 p.move();
                 console.log("moving");
             }
@@ -286,13 +293,6 @@ function startSimulation() {
         }
     }
 
-    for (let p of people) {
-        for (let n of people) {
-            if (p != n && p.getDistance(n) < MAXINFECTDIST) {
-                p.closestNeighbours.push(n);
-            }
-        }
-    }
 
     vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
     disease = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
