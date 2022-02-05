@@ -90,14 +90,14 @@ class Person {
         this.x += Math.random() * 2 - 1;
         this.y += Math.random() * 2 - 1;
         if (this.x > canvas.width) {
-            x = 0;
+            this.x = 0;
         } else if (this.x < 0) {
-            x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
-        }
+            this.x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+        }   
         if (this.y > canvas.height) {
-            y = 0;
+            this.y = 0;
         } else if (this.y < 0) {
-            y = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+            this.y = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
         }
     }
 }
@@ -117,6 +117,10 @@ class Disease {
         // Actual infection rate is calculated as some function of distance and infection rate
         for (let i in people) {
             let p = people[i];
+            if (!p.dead) {
+                p.move();
+                console.log("moving");
+            }
             if (p.infected && !p.dead) {
                 // infected person tries to infect all neighbors <- bioterrorism at it's finest
                 for (let n of p.closestNeighbours) {
@@ -127,50 +131,68 @@ class Disease {
                         console.log("trying to infect");
                         console.log(this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0));
                         if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0)) {
-                            n.infected = true;
-                            console.log("infected");
+                            if (n.immune > 1) {
+                                if (Math.random() * 10 < 1) {
+                                    n.infected = true;
+                                    console.log("infected");
+                                }
+                            } else if (n.immune == 1) {
+                                if (Math.random() * 10 < 3) {
+                                    n.infected = true;
+                                    console.log("infected");
+                                }
+                            } else {
+                                n.infected = true;
+                                console.log("infected");
+                            }
                         }
                     }
                 }
+
                 // infected person tries to recover + die + do nothing
+                //unvacinated 
                 if (p.immune < 1) {
                     let roll = Math.round(Math.random() * 100); 
                     if (roll < this.pRecovery) {
                         console.log("recovery")
                         p.infected = false;
                         p.immune = 1;
-                    } else if (roll >= (100 - this.pDeath)) {
+                    } else if (roll > (100 - this.pDeath)) {
                         console.log("it should die");
+                        console.log(roll + " > " + (100 - this.pDeath));
                         p.infected = false;
                         p.dead = true;
                     }
                 }
+                //"semi-vacinated" (allows virus to penetrate based on size) <- semi permiable lol
                 else if (p.immune == 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 2) {
                         console.log("recovery")
                         p.infected = false;
-                    } else if (roll >= (100 - (this.pDeath / 2))) {
+                    } else if (roll > (100 - (this.pDeath / 2))) {
                         console.log("it should die");
                         p.infected = false;
                         p.dead = true;
                     }
                 }
+                //fully vaccinated
                 else {
                     let roll = Math.round(Math.random() * 100);
-                    if (roll < this.pRecovery * 3) {
+                    if (roll < this.pRecovery * 10) {
                         console.log("recovery")
                         p.infected = false;
-                    } else if (roll >= (100 - (this.pDeath / 4))) {
+                    } else if (roll > (100 - (this.pDeath / 10))) {
                         console.log("it should die");
                         p.infected = false;
                         p.dead = true;
                     }
                 }
-                infectcount++;
             }
-            else if (p.dead) {
+            if (p.dead) {
                 deathcount++;
+            } else if (p.infected) {
+                infectcount++;
             }
         }
         iterationNum++;
@@ -220,6 +242,7 @@ async function startSimulation() {
         document.getElementById("death-rate").value, //death rate
         document.getElementById("recovery-rate").value, //recovery rate
     );
+    console.log(currentSettings);
     let amtAntiVax = currentSettings.numPeople * currentSettings.antiVaxxers / 100;
     for (let i = 1; i < currentSettings.numPeople; i++) {
         let x = Math.random() * canvas.width,
