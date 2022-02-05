@@ -453,7 +453,7 @@ document.getElementById("reset").addEventListener("click", () => {
     init();
 });
 
-document.getElementById("finalGraph").addEventListener("click", () => {
-    document.getElementById("finalGraph").hidden = false;
+document.getElementById("graph").addEventListener("click", () => {
+    document.getElementById("finalChart").hidden = false;
     drawGraph(infectData, deathData, immuneData);
 });
