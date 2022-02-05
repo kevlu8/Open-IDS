@@ -1,6 +1,8 @@
 "use strict";
 
 const FPS = 15;
+var WIDTH;
+var HEIGHT;
 
 var people = [];
 let iterationNum = 0;
@@ -86,7 +88,7 @@ setInterval(() => {
     let ctx = canvas.getContext("2d");
     for (let p of people) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.min(window.clientWidth, window.clientHeight) * 0.01, 0, 2 * Math.PI);
+        ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
         if (p.infected) ctx.fillStyle = "red";
         else if (p.dead) ctx.fillStyle = "black";
         else ctx.fillStyle = "green";
@@ -105,8 +107,10 @@ async function main() {
 
 async function init() {
     let canvas = document.getElementById("main");
-    canvas.width = window.clientWidth;
-    canvas.height = window.clientHeight;
+    WIDTH = Math.min(window.innerWidth * 0.75, window.innerHeight);
+    HEIGHT = Math.min(window.innerWidth * 0.75, window.innerHeight);
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
 }
 
-window.onload = main;
+window.onload = init;
