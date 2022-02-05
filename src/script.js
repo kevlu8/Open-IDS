@@ -8,7 +8,7 @@ let WIDTH, HEIGHT;
 let people = [];
 let iterationNum = 0, infectcount = 0, deathcount = 0, vaccinecount = 0, vaccineprog = 0;
 let currentSettings;
-let diseas;
+let disease;
 let vaccine;
 
 class UserSettings {
@@ -67,13 +67,17 @@ class Vaccine {
 class Person {
     closestNeighbours = [];
 
-    constructor(x, y, immune, antivax = false, infected = false, dead = false) {
+    constructor(x, y, immune=0, antivax = false, infected = false, dead = false) {
         this.antivax = antivax;
         this.infected = infected;
         this.immune = immune;
         this.dead = dead;
         this.x = x;
         this.y = y;
+        this.destx = x;
+        this.desty = y;
+        this.diffx = 0;
+        this.diffy = 0;
     }
 
     getDistance(person) {
@@ -87,20 +91,41 @@ class Person {
         }
     }
 
-    move() {
-        let canvas = document.getElementById("main");
-        this.x += Math.random() * 2 - 1;
-        this.y += Math.random() * 2 - 1;
-        if (this.x > canvas.width) {
-            this.x = 0;
-        } else if (this.x < 0) {
-            this.x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
-        }   
-        if (this.y > canvas.height) {
-            this.y = 0;
-        } else if (this.y < 0) {
-            this.y = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+    changedest(x, y) {
+        this.destx = x;
+        this.desty = y;
+        this.diffx = x - this.x;
+        this.diffy = y - this.y;
+        if (Math.abs(this.diffx) > 1 || Math.abs(this.diffy) > 1) {
+            if (Math.abs(this.diffx) > Math.abs(this.diffy)) {
+                this.diffy /= Math.abs(this.diffx);
+                this.diffx /= this.diffx;
+            } else {
+                this.diffx /= Math.abs(this.diffy);
+                this.diffy /= this.diffy;
+            }
         }
+    }
+
+    move() {
+        if (Math.abs(this.x - this.destx) + Math.abs(this.y - this.desty) < 1) this.changedest();
+        this.x += this.diffx;
+        this.y += this.diffy;
+        // this.destx = x;
+        // this.desty = y;
+        // let canvas = document.getElementById("main");
+        // let diffx, diffy = this.x - this.destx, this.y - this.desty;
+
+        // if (this.x > canvas.width) {
+        //     this.x = 0;
+        // } else if (this.x < 0) {
+        //     this.x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+        // }   
+        // if (this.y > canvas.height) {
+        //     this.y = 0;
+        // } else if (this.y < 0) {
+        //     this.y = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
+        // }
     }
 }
 
@@ -151,7 +176,7 @@ class Disease {
                 }
 
                 // infected person tries to recover + die + do nothing
-                //unvacinated 
+                // unvacinated 
                 if (p.immune < 1) {
                     let roll = Math.round(Math.random() * 100); 
                     if (roll < this.pRecovery) {
@@ -165,7 +190,7 @@ class Disease {
                         p.dead = true;
                     }
                 }
-                //"semi-vacinated" (allows virus to penetrate based on size) <- semi permiable lol
+                // "semi-vacinated" (allows virus to penetrate based on size) <- semi permiable lol
                 else if (p.immune == 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 2) {
@@ -177,7 +202,7 @@ class Disease {
                         p.dead = true;
                     }
                 }
-                //fully vaccinated
+                // fully vaccinated
                 else {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 10) {
@@ -213,11 +238,11 @@ async function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-async function main() {
+function main() {
     let canvas = document.getElementById("main");
 }
 
-async function init() {
+function init() {
     let canvas = document.getElementById("main");
     WIDTH = window.innerWidth * 0.9;
     HEIGHT = window.innerHeight * 0.9;
@@ -231,7 +256,7 @@ async function init() {
 }
 
 //starting simulation
-async function startSimulation() {
+function startSimulation() {
     let canvas = document.getElementById("main");
     people = [];
     iterationNum = 0; 
@@ -268,9 +293,9 @@ async function startSimulation() {
     }
 
     vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
-    diseas = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
+    disease = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
 
-    people[Math.round(Math.random() * people.length)].infected = true; // Patient Zero
+    people[Math.floor(Math.random() * people.length)].infected = true; // Patient Zero
     // Start the simulation
     autoSimulate();
 }
@@ -279,7 +304,7 @@ async function startSimulation() {
 async function procSimulation() {
     //"one proc" -> one cycle (maybe allow user to see simulation in steps or smt)
     //have loop to call procs if they're too lazy to click "next" button themselves
-    await diseas.iter(people);
+    await disease.iter(people);
     let currentPopInf = document.getElementById("infectcount").innerHTML.split(" ")[1];
     let currentPopDead = document.getElementById("deathcount").innerHTML.split(" ")[1];
     let currentPopImmune = document.getElementById("vaccinecount").innerHTML.split(" ")[1];
@@ -302,7 +327,7 @@ async function procSimulation() {
 }
 
 async function autoSimulate() {
-    while (diseas.auto) {
+    while (disease.auto) {
         await sleep(1000 / currentSettings.iterSpeed);
         procSimulation();
     }
@@ -314,17 +339,19 @@ new Promise(async () => {
         let startDraw = Date.now();
         let canvas = document.getElementById("main");
         let ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        //ctx.clearRect(0, 0, WIDTH, HEIGHT);
         for (let p of people) {
             ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
             if (p.immune == 1) {
                 ctx.strokeStyle = "blue";
                 ctx.lineWidth = "2";
+                ctx.stroke();
             } else if (p.immune == 2) {
                 ctx.strokeStyle = "blue";
                 ctx.lineWidth = "5";
+                ctx.stroke();
             } 
-                ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
             if (p.dead) ctx.fillStyle = "grey";
             else if (p.infected) ctx.fillStyle = "red";
             else ctx.fillStyle = "green";
@@ -344,10 +371,10 @@ document.getElementById("start").addEventListener("click", () => {
         startSimulation();
     } else if (document.getElementById("start").innerText == "Pause") {
         document.getElementById("start").innerText = "Resume";
-        diseas.auto = false;
+        disease.auto = false;
     } else if (document.getElementById("start").innerText == "Resume") {
         document.getElementById("start").innerText = "Pause";
-        diseas.auto = true;
+        disease.auto = true;
         autoSimulate();
     }
 });
@@ -358,6 +385,6 @@ document.getElementById("next").addEventListener("click", () => {
 
 document.getElementById("reset").addEventListener("click", () => {
     document.getElementById("start").innerText = "Start";
-    diseas.auto = false;
+    disease.auto = false;
     init();
 });
