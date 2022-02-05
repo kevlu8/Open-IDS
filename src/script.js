@@ -4,7 +4,6 @@ const FPS = 30;
 const METRE = 10; //pixels
 const MAXINFECTDIST = 500;
 var WIDTH, HEIGHT;
-
 var runId;
 
 var people = [];
@@ -21,6 +20,7 @@ var disease;
 var vaccine;
 var endscreen;
 var endText;
+var endReached;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
