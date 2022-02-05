@@ -20,24 +20,49 @@
             <h3>Parameters</h3>
             <div id="parameter-container">
                 <div class="parameter">
+                    <label for="iter-rate">Iteration Speed</label>
+                    <input ontype="range" id="iter-rate" min="0" max="50" />
+                    <label id="antivax">25</label>
+                </div>
+                <div class="parameter">
                     <label for="population">Population</label>
-                    <input type="range" id="population" name="population" min="1" max="1000" />
-                    <h6 id="pop">500</h6>
+                    <input ontype="range" id="population" name="population" min="1" max="1000" />
+                    <label id="pop">500</label>
                 </div>
                 <div class="parameter">
                     <label for="infection-rate">Infection rate</label>
-                    <input type="range" id="infection-rate" min="0" max="100" />
-                    <h6 id="infect">50</h6>
+                    <input ontype="range" id="infection-rate" min="0" max="100" />
+                    <label id="infect">50</label>
+                </div>
+                <div class="parameter">
+                    <label for="anti-vaxxers">Anti-Vaxxers</label>
+                    <input ontype="range" id="anti-vaxxers" min="0" max="100" />
+                    <label id="antivax">50</label>
+                </div>
+                <div class="parameter">
+                    <label for="vaccine-after">Vaccine Starts After n% infections</label>
+                    <input ontype="range" id="vaccine-after" min="0" max="100" />
+                    <label id="vacAfter">50</label>
+                </div>
+                <div class="parameter">
+                    <label for="vaccine-rate">Vaccine Development Speed</label>
+                    <input ontype="range" id="vaccine-rate" min="0" max="100" />
+                    <label id="vacRate">50</label>
+                </div>
+                <div class="parameter">
+                    <label for="social-distance">Social Distancing</label>
+                    <input ontype="range" id="social-distance" min="0" max="10" />
+                    <label id="socDist">5</label>
                 </div>
                 <div class="parameter">
                     <label for="recovery-rate">Recovery rate</label>
-                    <input type="range" id="recovery-rate" min="0" max="100" />
-                    <h6 id="recover">50</h6>
+                    <input ontype="range" id="recovery-rate" min="0" max="100" />
+                    <label id="recover">50</label>
                 </div>
                 <div class="parameter">
                     <label for="death-rate">Death rate</label>
-                    <input type="range" id="death-rate" min="0" max="100" />
-                    <h6 id="death">50</h6>
+                    <input ontype="range" id="death-rate" min="0" max="100" />
+                    <label id="death">50</label>
                 </div>
             </div>
         </div>

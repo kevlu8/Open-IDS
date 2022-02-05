@@ -4,11 +4,14 @@ const FPS = 15;
 var WIDTH;
 var HEIGHT;
 
-var people = [];
-let iterationNum = 0;
+var people;
+let iterationNum;
+var currentSettings;
+let diseas;
+let vaccine;
 
 class UserSettings {
-    constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, socialDistance, deathRate /*peopleMove*/) {
+    constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, socialDistance, deathRate, recoveryRate /*peopleMove*/) {
         this.iterSpeed = iterSpeed; // How many iterations per second
         this.numPeople = numPeople; // How many people are in the simulation
         this.baseInfectionRate = baseInfectionRate; // Probability of a person being infected when they are on top of a person who is infected in percent
@@ -17,11 +20,30 @@ class UserSettings {
         this.developmentRate = developmentRate; // How much the vaccine will develop per iteration
         this.socialDistance = socialDistance; // How far apart people are in metres
         this.deathRate = deathRate; // What percentage of people die per iteration
+        this.recoveryRate = recoveryRate;
         // this.peopleMove = peopleMove; // Whether people move around or not
     }
 }
 
-var currentSettings = new UserSettings(2, 9, 60, 10, true, 1, 1, 10 /* false */); // Default settings
+class Vaccine {
+    constructor(startTime, developmentRate) {
+        this.progress = 0;
+        this.developmentStart = startTime;
+        this.developmentRate = developmentRate;
+        this.developmentProgress = 0;
+    }
+
+    develop(infectedPopPercent /*, population*/) {
+        if (infectedPopPercent >= this.developmentStart) {
+            if (this.this.developmentProgress < 100) {
+                this.developmentProgress += this.developmentRate;
+            } else {
+                this.developmentProgress = 100;
+            }
+        }
+        return 0;
+    }
+}
 
 class Person {
     closestNeighbours = [];
@@ -79,10 +101,59 @@ class Disease {
     }
 }
 
+//utility ig
 async function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
 }
 
+async function main() {
+    let canvas = document.getElementById("main");
+}
+
+async function init() {
+    let canvas = document.getElementById("main");
+    WIDTH = window.innerWidth * 0.8;
+    HEIGHT = window.innerHeight * 0.9;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+}
+
+//starting simulation
+async function startSimulation() {
+    let canvas = document.getElementById("main");
+    people = [];
+    iterationNum = 0;
+    currentSettings = new UserSettings(
+        document.getElementById("iter-rate").value, //iter speed
+        document.getElementById("pop").value, //population
+        document.getElementById("infect").value, //infection rate
+        document.getElementById("vaccine-after").value, //vaccine development start
+        document.getElementById("anti-vaxxers").value, //antivaxxers
+        document.getElementById("vaccine-rate").value, //vaccine develepment rate
+        document.getElementById("vaccine-after"), //social distancing
+        document.getElementById("death-rate").value, //death rate
+        document.getElementById("recovery-rate").value //recovery rate
+    );
+
+    for (let i = 0; i < currentSettings.numPeople; i++) {
+        let x = Math.random() * canvas.width,
+            y = Math.random() * canvas.height;
+        people.push(new Person(x, y));
+    }
+
+    vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
+    diseas = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
+}
+
+//procing simulation
+async function procSimulation() {
+    //"one proc" -> one cycle (maybe allow user to see simulation in steps or smt)
+    //have loop to call procs if they're too lazy to click "next" button themselves
+    diseas.iter();
+    vaccine.develop();
+}
+
+//updating drawing
 setInterval(() => {
     let canvas = document.getElementById("main");
     let ctx = canvas.getContext("2d");
@@ -95,22 +166,5 @@ setInterval(() => {
         ctx.fill();
     }
 }, 1000 / FPS);
-
-async function main() {
-    let canvas = document.getElementById("main");
-    for (let i = 0; i < currentSettings.numPeople; i++) {
-        let x = Math.random() * canvas.width,
-            y = Math.random() * canvas.height;
-        people.push(new Person(x, y));
-    }
-}
-
-async function init() {
-    let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.8;
-    HEIGHT = window.innerHeight * 0.9;
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
-}
 
 window.onload = init;
