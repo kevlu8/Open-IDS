@@ -190,7 +190,7 @@ class Disease {
                     }
                 }
             }
-            if (p.immune > 1) {
+            if (p.immune >= 1) {
                 vaccinecount++
             }
             if (p.dead) {
@@ -291,13 +291,13 @@ async function procSimulation() {
     }
 
     if (currentPopInf == 0 && currentPopDead > 0 && currentPopDead < people.length) {
-        document.getElementById("endscreen").innerHTML = "The virus killed all hosts before the population was able to develop immunity.";
+        document.getElementById("endscreen").innerHTML = "The virus killed all hosts before infecting the entire population.";
     } 
     else if (currentPopInf == 0 && currentPopDead == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
     }
-    else if (currentPopInf == people.length) {
-        document.getElementById("endscreen").innerHTML = "The virus infected the entire population.";
+    else if (currentPopImmune == people.length) {
+        document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
     }
 }
 
@@ -308,23 +308,35 @@ async function autoSimulate() {
     }
 }
 
-//updating drawing
-setInterval(() => {
-    let canvas = document.getElementById("main");
-    let ctx = canvas.getContext("2d");
-    for (let p of people) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
-        if (p.dead) ctx.fillStyle = "grey";
-        else if (p.infected) ctx.fillStyle = "red";
-        else ctx.fillStyle = "green";
-        ctx.fill();
+// updating drawing
+new Promise(async () => {
+    while (true) {
+        let startDraw = Date.now();
+        let canvas = document.getElementById("main");
+        let ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        for (let p of people) {
+            ctx.beginPath();
+            if (p.immune == 1) {
+                ctx.strokeStyle = "blue";
+                ctx.lineWidth = "2";
+            } else if (p.immune == 2) {
+                ctx.strokeStyle = "blue";
+                ctx.lineWidth = "5";
+            } 
+                ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
+            if (p.dead) ctx.fillStyle = "grey";
+            else if (p.infected) ctx.fillStyle = "red";
+            else ctx.fillStyle = "green";
+            ctx.fill();
+        }
+        await sleep(1000 / FPS - Date.now() + startDraw);
     }
-}, 1000 / FPS);
+});
 
 window.onload = init;
 
-//managing simulation
+// managing simulation
 document.getElementById("start").addEventListener("click", () => {
     if (document.getElementById("start").innerText == "Start") {
         document.getElementById("start").innerText = "Pause";
