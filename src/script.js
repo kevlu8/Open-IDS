@@ -1,8 +1,8 @@
 "use strict";
 
 const FPS = 30;
-const MAXINFECTDIST = 10;
 const METRE = 10; //pixels
+const MAXINFECTDIST = 500;
 let WIDTH, HEIGHT;
 
 let people = [];
@@ -10,6 +10,7 @@ let iterationNum = 0, infectcount = 0, deathcount = 0, vaccinecount = 0, vaccine
 let currentSettings;
 let diseas;
 let vaccine;
+let dosecount = 0;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
@@ -38,8 +39,18 @@ class Vaccine {
         if (infectedPopPercent >= this.developmentStart) {
             if (this.developmentProgress < 100) {
                 this.developmentProgress += (this.developmentRate / 5);
+                document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + this.developmentProgress + "%";
             } else {
                 this.developmentProgress = 100;
+                if (dosecount == 0) {
+                    dosecount++;
+                    this.developmentProgress = 0;
+                    return 1;
+                }
+                else {
+                    dosecount++;
+                    return 2;
+                }
             }
         }
     }
@@ -73,6 +84,11 @@ class Person {
             this.immune = doseNum;
         }
     }
+
+    move() {
+        this.x += Math.random() * 4 - 1;
+        this.y += Math.random() * 4 - 1;
+    }
 }
 
 class Disease {
@@ -102,34 +118,45 @@ class Disease {
                         }
                     }
                 }
-
                 // infected person tries to recover + die + do nothing
                 if (p.immune < 1) {
-                    let roll = Math.random() * 100;
-                    if (roll <= this.pRecovery) {
+                    let roll = Math.round(Math.random() * 100); 
+                    if (roll < this.pRecovery) {
+                        console.log("recovery")
                         p.infected = false;
                         p.immune = 1;
-                    } else if (roll >= 100 - this.pDeath) {
+                    } else if (roll >= (100 - this.pDeath)) {
+                        console.log("it should die");
                         people.splice(i, 1);
+                        p.infected = false;
+                        p.dead = true;
                     }
                 }
                 else if (p.immune == 1) {
-                    let roll = Math.random() * 100;
-                    if (roll <= this.pRecovery * 2) {
+                    let roll = Math.round(Math.random() * 100);
+                    if (roll < this.pRecovery * 2) {
+                        console.log("recovery")
                         p.infected = false;
-                    } else if (roll >= 100 - (this.pDeath / 2)) {
+                    } else if (roll >= (100 - (this.pDeath / 2))) {
+                        console.log("it should die");
                         people.splice(i, 1);
+                        p.infected = false;
+                        p.dead = true;
                     }
                 }
                 else {
-                    let roll = Math.random() * 100;
-                    if (roll <= this.pRecovery * 3) {
+                    let roll = Math.round(Math.random() * 100);
+                    if (roll < this.pRecovery * 3) {
+                        console.log("recovery")
                         p.infected = false;
-                    } else if (roll >= 100 - (this.pDeath / 4)) {
+                    } else if (roll >= (100 - (this.pDeath / 4))) {
+                        console.log("it should die");
                         people.splice(i, 1);
+                        p.infected = false;
+                        p.dead = true;
                     }
                 }
-                infectcount++;
+                //infectcount++;
             }
             else if (p.dead) {
                 deathcount++;
@@ -167,7 +194,7 @@ async function init() {
 }
 
 //starting simulation
-async function startSimulation(stop=false) {
+async function startSimulation() {
     let canvas = document.getElementById("main");
     people = [];
     iterationNum = 0; 
@@ -178,20 +205,19 @@ async function startSimulation(stop=false) {
         document.getElementById("vaccine-after").value, //vaccine development start
         document.getElementById("anti-vaxxers").value, //antivaxxers
         document.getElementById("vaccine-rate").value, //vaccine develepment rate
-        document.getElementById("vaccine-after"), //social distancing
+        //document.getElementById("vaccine-after").value, //social distancing
         document.getElementById("death-rate").value, //death rate
-        document.getElementById("recovery-rate").value //recovery rate
+        document.getElementById("recovery-rate").value, //recovery rate
     );
     let amtAntiVax = currentSettings.numPeople * currentSettings.antiVaxxers / 100;
     for (let i = 1; i < currentSettings.numPeople; i++) {
         let x = Math.random() * canvas.width,
             y = Math.random() * canvas.height;
-        
-        people.push(new Person(x, y, false, true))
+
         if (i < amtAntiVax) {
-            people.push(new Person(x, y, true));
+            people.push(new Person(x, y, 0, true));
         } else {
-            people.push(new Person(x, y));
+            people.push(new Person(x, y, 0, false));
         }
     }
 
@@ -216,7 +242,13 @@ async function procSimulation() {
     //"one proc" -> one cycle (maybe allow user to see simulation in steps or smt)
     //have loop to call procs if they're too lazy to click "next" button themselves
     await diseas.iter(people);
-    await vaccine.develop(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
+    let currentPopInf = document.getElementById("infectcount").innerHTML.split(" ")[1];
+    let infPercent = Math.round(currentPopInf / people.length * 100);
+    
+    let done = await vaccine.develop(infPercent);
+    if (done > 0) {
+        vaccine.release(people, done);
+    }
 }
 
 async function autoSimulate() {
@@ -239,6 +271,7 @@ setInterval(() => {
         ctx.fill();
     }
 }, 1000 / FPS);
+
 window.onload = init;
 
 //managing simulation
@@ -259,4 +292,10 @@ document.getElementById("start").addEventListener("click", () => {
 
 document.getElementById("next").addEventListener("click", () => {
     procSimulation();
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+    document.getElementById("start").innerText = "Start";
+    diseas.auto = false;
+    init();
 });
