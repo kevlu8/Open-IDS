@@ -1,16 +1,45 @@
+"use strict";
+
+const FPS = 30;
+var canvas;
+
 var people = [];
+let iterationNum = 0;
+
+class UserSettings {
+    constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, socialDistance, deathRate /*peopleMove*/) {
+        this.iterSpeed = iterSpeed; // How many iterations per second
+        this.numPeople = numPeople; // How many people are in the simulation
+        this.baseInfectionRate = baseInfectionRate; // Probability of a person being infected when they are on top of a person who is infected in percent
+        this.vaccineDevelopedAfterXPercentInfections = vaccineDevelopedAfterXPercentInfections; // What percentage of people must be infected before the vaccine is developed
+        this.antiVaxxers = antiVaxxers; // What percentage of people are ~~immune to the vaccine~~ refusing to take the vaccine
+        this.developmentRate = developmentRate; // How much the vaccine will develop per iteration
+        this.socialDistance = socialDistance; // How far apart people are in metres
+        this.deathRate = deathRate; // What percentage of people die per iteration
+        // this.peopleMove = peopleMove; // Whether people move around or not
+    }
+}
+
+var currentSettings = new UserSettings(2, 9, 60, 10, true, 1, 1, 10 /* false */); // Default settings
 
 class Person {
-    async constructor(x, y, infected=false, immune=false) {
+    closestNeighbours = [];
+
+    constructor(x, y, infected = false, immune = false) {
         this.infected = infected;
         this.immune = immune;
         this.x = x;
         this.y = y;
     }
+
+    getDistance(person) {
+        return Math.abs(this.x - person.x) + Math.abs(this.y - person.y);
+        // return Math.hypot(this.x - person.x, this.y - person.y);
+    }
 }
 
 class Disease {
-    async constructor(pSpread, pRecovery, pDeath) {
+    constructor(pSpread, pRecovery, pDeath) {
         this.pSpread = pSpread;
         this.pRecovery = pRecovery;
         this.pDeath = pDeath;
@@ -19,29 +48,58 @@ class Disease {
     async iter(people) {
         // People is an array of class Person
         // Iterate over each person
-        // Actual infection rate is calculates as some function of distance + infection rate
-        for (let i = 0; i < people.length(); i++) {
-            if (people[i].infected) {
-                
+        // Actual infection rate is calculated as some function of distance and infection rate
+        for (let i in people) {
+            let p = people[i];
+            if (p.infected) {
+                // infected person tries to infect all neighbors <- bioterrorism at it's finest
+                for (let n of people.closestNeighbours) {
+                    if (!n.infected) {
+                        // attempting to infect uninfected neighbor:
+                        // y = -1/25x^2 + 1
+                        // baseInfectionRate is the number when x = 0
+                        if (Math.random() * 100 <= currentSettings.pSpread * Math.max(-(x ** 2 / 25) + 1, 0)) {
+                            n.infected = true;
+                        }
+                    }
+                }
+
+                // infected person tries to recover + die + do nothing
+                let roll = Math.random() * 100;
+                if (roll <= this.pRecovery) {
+                    p.infected = false;
+                } else if (roll >= 1 - this.pDeath) {
+                    people.splice(i, 1);
+                }
             }
         }
+        iterationNum++;
     }
 }
 
 async function sleep(ms) {
-    setTimeout()
+    return new Promise((r) => setTimeout(r, ms));
 }
 
-async function render() {
-
-}
+setInterval(() => {
+    let ctx = canvas.getContext("2d");
+    for (let p of people) {
+        ctx.fillCircle(p.x, p.y);
+    }
+}, 1000 / FPS);
 
 async function main() {
-  let canvas = document.getElementById("main");
-  canvas.width = window.clientWidth;
-  canvas.height = window.clientHeight;
+    for (let i = 0; i < currentSettings.numPeople; i++) {
+        let x = Math.random() * canvas.width,
+            y = Math.random() * canvas.height;
+        people.push(new Person(x, y));
+    }
 }
 
-window.onload = main;
+async function init() {
+    canvas = document.getElementById("main");
+    canvas.width = window.clientWidth;
+    canvas.height = window.clientHeight;
+}
 
 window.onload = main;
