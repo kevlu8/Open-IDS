@@ -6,7 +6,11 @@ const MAXINFECTDIST = 500;
 let WIDTH, HEIGHT;
 
 let people = [];
-let iterationNum = 0, infectcount = 0, deathcount = 0, vaccinecount = 0, vaccineprog = 0;
+let iterationNum = 0,
+    infectcount = 0,
+    deathcount = 0,
+    vaccinecount = 0,
+    vaccineprog = 0;
 let currentSettings;
 let disease;
 let vaccine;
@@ -38,7 +42,7 @@ class Vaccine {
     develop(infectedPopPercent /*, population*/) {
         if (infectedPopPercent >= this.developmentStart) {
             if (this.developmentProgress < 100) {
-                this.developmentProgress += (this.developmentRate / 5);
+                this.developmentProgress += this.developmentRate / 5;
                 document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + Math.round(this.developmentProgress) + "%";
             } else {
                 this.developmentProgress = 100;
@@ -48,8 +52,7 @@ class Vaccine {
                     this.dosecount = 1;
                     this.developmentProgress = 0;
                     return 1;
-                }
-                else {
+                } else {
                     this.dosecount = 2;
                     return 2;
                 }
@@ -67,7 +70,7 @@ class Vaccine {
 class Person {
     closestNeighbours = [];
 
-    constructor(x, y, immune=0, antivax = false, infected = false, dead = false) {
+    constructor(x, y, immune = 0, antivax = false, infected = false, dead = false) {
         this.antivax = antivax;
         this.infected = infected;
         this.immune = immune;
@@ -122,7 +125,7 @@ class Person {
         //     this.x = 0;
         // } else if (this.x < 0) {
         //     this.x = canvas.width; //this might cause them to clump up at edges but we'll see ig ONCE U PUSH KEVIN SMH
-        // }   
+        // }
         // if (this.y > canvas.height) {
         //     this.y = 0;
         // } else if (this.y < 0) {
@@ -132,28 +135,28 @@ class Person {
 }
 
 class Disease {
-    constructor(pSpread, pRecovery, pDeath, auto=true) {
+    constructor(pSpread, pRecovery, pDeath, auto = true) {
         this.pSpread = pSpread;
         this.pRecovery = pRecovery;
         this.pDeath = pDeath;
         this.auto = auto;
     }
-    
+
     async iter(people) {
-        infectcount = 0, deathcount = 0, vaccinecount = 0, vaccineprog = 0; 
-    for (let p of people) { 
-            for (let n of people) { 
-                if (p != n && p.getDistance(n) < MAXINFECTDIST) { 
-                    p.closestNeighbours.push(n); 
-                } 
+        (infectcount = 0), (deathcount = 0), (vaccinecount = 0), (vaccineprog = 0);
+        for (let p of people) {
+            for (let n of people) {
+                if (p != n && p.getDistance(n) < MAXINFECTDIST) {
+                    p.closestNeighbours.push(n);
+                }
             }
         }
-        // People is an array of class Person 
-        // Iterate over each person 
+        // People is an array of class Person
+        // Iterate over each person
         // Actual infection rate is calculated a s some function of distance and infection rate
-        for (let i in people) { 
-            let p = people[i]; 
-            if (!p.dead) { 
+        for (let i in people) {
+            let p = people[i];
+            if (!p.dead) {
                 p.move();
                 console.log("moving");
             }
@@ -165,7 +168,7 @@ class Disease {
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
                         console.log("trying to infect");
-                        if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0)) {
+                        if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / MAXINFECTDIST ** 2) + 1, 0)) {
                             if (n.immune > 1) {
                                 if (Math.random() * 10 < 1) {
                                     n.infected = true;
@@ -185,14 +188,14 @@ class Disease {
                 }
 
                 // infected person tries to recover + die + do nothing
-                // unvacinated 
+                // unvacinated
                 if (p.immune < 1) {
-                    let roll = Math.round(Math.random() * 100); 
+                    let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery) {
-                        console.log("recovery")
+                        console.log("recovery");
                         p.infected = false;
                         p.immune = 1;
-                    } else if (roll > (100 - this.pDeath)) {
+                    } else if (roll > 100 - this.pDeath) {
                         console.log("it should die");
                         console.log(roll + " > " + (100 - this.pDeath));
                         p.infected = false;
@@ -203,9 +206,9 @@ class Disease {
                 else if (p.immune == 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 2) {
-                        console.log("recovery")
+                        console.log("recovery");
                         p.infected = false;
-                    } else if (roll > (100 - (this.pDeath / 2))) {
+                    } else if (roll > 100 - this.pDeath / 2) {
                         console.log("it should die");
                         p.infected = false;
                         p.dead = true;
@@ -215,9 +218,9 @@ class Disease {
                 else {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 10) {
-                        console.log("recovery")
+                        console.log("recovery");
                         p.infected = false;
-                    } else if (roll > (100 - (this.pDeath / 10))) {
+                    } else if (roll > 100 - this.pDeath / 10) {
                         console.log("it should die");
                         p.infected = false;
                         p.dead = true;
@@ -225,7 +228,7 @@ class Disease {
                 }
             }
             if (p.immune >= 1) {
-                vaccinecount++
+                vaccinecount++;
             }
             if (p.dead) {
                 deathcount++;
@@ -268,7 +271,7 @@ function init() {
 function startSimulation() {
     let canvas = document.getElementById("main");
     people = [];
-    iterationNum = 0; 
+    iterationNum = 0;
     currentSettings = new UserSettings(
         document.getElementById("iter-rate").value, //iter speed
         document.getElementById("population").value, //population
@@ -278,10 +281,10 @@ function startSimulation() {
         document.getElementById("vaccine-rate").value, //vaccine develepment rate
         //document.getElementById("vaccine-after").value, //social distancing
         document.getElementById("death-rate").value, //death rate
-        document.getElementById("recovery-rate").value, //recovery rate
+        document.getElementById("recovery-rate").value //recovery rate
     );
     console.log(currentSettings);
-    let amtAntiVax = currentSettings.numPeople * currentSettings.antiVaxxers / 100;
+    let amtAntiVax = (currentSettings.numPeople * currentSettings.antiVaxxers) / 100;
     for (let i = 1; i < currentSettings.numPeople; i++) {
         let x = Math.random() * canvas.width,
             y = Math.random() * canvas.height;
@@ -292,7 +295,6 @@ function startSimulation() {
             people.push(new Person(x, y, 0, false));
         }
     }
-
 
     vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
     disease = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
@@ -310,8 +312,8 @@ async function procSimulation() {
     let currentPopInf = document.getElementById("infectcount").innerHTML.split(" ")[1];
     let currentPopDead = document.getElementById("deathcount").innerHTML.split(" ")[1];
     let currentPopImmune = document.getElementById("vaccinecount").innerHTML.split(" ")[1];
-    let infPercent = Math.round(currentPopInf / people.length * 100);
-    
+    let infPercent = Math.round((currentPopInf / people.length) * 100);
+
     let done = await vaccine.develop(infPercent);
     if (done > 0) {
         vaccine.release(people, done);
@@ -319,11 +321,9 @@ async function procSimulation() {
 
     if (currentPopInf == 0 && currentPopDead > 0 && currentPopDead < people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed all hosts before infecting the entire population.";
-    } 
-    else if (currentPopInf == 0 && currentPopDead == people.length) {
+    } else if (currentPopInf == 0 && currentPopDead == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
-    }
-    else if (currentPopImmune == people.length) {
+    } else if (currentPopImmune == people.length) {
         document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
     }
 }
@@ -353,7 +353,7 @@ new Promise(async () => {
                 ctx.strokeStyle = "blue";
                 ctx.lineWidth = "5";
                 ctx.stroke();
-            } 
+            }
             if (p.dead) ctx.fillStyle = "grey";
             else if (p.infected) ctx.fillStyle = "red";
             else ctx.fillStyle = "green";
