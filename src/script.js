@@ -36,7 +36,7 @@ class Vaccine {
         this.developmentStart = startTime;
         this.developmentRate = developmentRate;
         this.developmentProgress = 0;
-        let dosecount = 0;
+        this.dosecount = 0;
     }
 
     develop(infectedPopPercent /*, population*/) {
@@ -312,7 +312,7 @@ async function procSimulation() {
     let currentPopInf = document.getElementById("infectcount").innerHTML.split(" ")[1];
     let currentPopDead = document.getElementById("deathcount").innerHTML.split(" ")[1];
     let currentPopImmune = document.getElementById("vaccinecount").innerHTML.split(" ")[1];
-    let infPercent = Math.round((currentPopInf / people.length) * 100);
+    let infPercent = Math.round(((currentPopInf + currentPopDead) / people.length) * 100);
 
     let done = await vaccine.develop(infPercent);
     if (done > 0) {
@@ -345,14 +345,16 @@ new Promise(async () => {
         for (let p of people) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
-            if (p.immune == 1) {
-                ctx.strokeStyle = "blue";
-                ctx.lineWidth = "2";
-                ctx.stroke();
-            } else if (p.immune == 2) {
-                ctx.strokeStyle = "blue";
-                ctx.lineWidth = "5";
-                ctx.stroke();
+            if (!p.dead) {
+                if (p.immune == 1) {
+                    ctx.strokeStyle = "blue";
+                    ctx.lineWidth = "2";
+                    ctx.stroke();
+                } else if (p.immune == 2) {
+                    ctx.strokeStyle = "blue";
+                    ctx.lineWidth = "5";
+                    ctx.stroke();
+                }
             }
             if (p.dead) ctx.fillStyle = "grey";
             else if (p.infected) ctx.fillStyle = "red";
