@@ -3,17 +3,24 @@
 const FPS = 30;
 const METRE = 10; //pixels
 const MAXINFECTDIST = 500;
-let WIDTH, HEIGHT;
+var WIDTH, HEIGHT;
 
-let people = [];
-let iterationNum = 0,
+var runId;
+
+var people = [];
+var infectData = [];
+var deathData = [];
+var immuneData = [];
+var iterationNum = 0,
     infectcount = 0,
     deathcount = 0,
     vaccinecount = 0,
     vaccineprog = 0;
-let currentSettings;
-let disease;
-let vaccine;
+var currentSettings;
+var disease;
+var vaccine;
+var endscreen;
+var endText;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
@@ -158,7 +165,7 @@ class Disease {
             let p = people[i];
             if (!p.dead) {
                 p.move();
-                console.log("moving");
+                // console.log("moving");
             }
             if (p.infected && !p.dead) {
                 // infected person tries to infect all neighbors <- bioterrorism at it's finest
@@ -167,21 +174,21 @@ class Disease {
                         // attempting to infect uninfected neighbor:
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
-                        console.log("trying to infect");
+                        // console.log("trying to infect");
                         if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / MAXINFECTDIST ** 2) + 1, 0)) {
                             if (n.immune > 1) {
                                 if (Math.random() * 10 < 1) {
                                     n.infected = true;
-                                    console.log("infected");
+                                    // console.log("infected");
                                 }
                             } else if (n.immune == 1) {
                                 if (Math.random() * 10 < 3) {
                                     n.infected = true;
-                                    console.log("infected");
+                                    // console.log("infected");
                                 }
                             } else {
                                 n.infected = true;
-                                console.log("infected");
+                                // console.log("infected");
                             }
                         }
                     }
@@ -192,12 +199,12 @@ class Disease {
                 if (p.immune < 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery) {
-                        console.log("recovery");
+                        // console.log("recovery");
                         p.infected = false;
                         p.immune = 1;
                     } else if (roll > 100 - this.pDeath) {
-                        console.log("it should die");
-                        console.log(roll + " > " + (100 - this.pDeath));
+                        // console.log("it should die");
+                        // console.log(roll + " > " + (100 - this.pDeath));
                         p.infected = false;
                         p.dead = true;
                     }
@@ -206,10 +213,10 @@ class Disease {
                 else if (p.immune == 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 2) {
-                        console.log("recovery");
+                        // console.log("recovery");
                         p.infected = false;
                     } else if (roll > 100 - this.pDeath / 2) {
-                        console.log("it should die");
+                        // console.log("it should die");
                         p.infected = false;
                         p.dead = true;
                     }
@@ -218,10 +225,10 @@ class Disease {
                 else {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 10) {
-                        console.log("recovery");
+                        // console.log("recovery");
                         p.infected = false;
                     } else if (roll > 100 - this.pDeath / 10) {
-                        console.log("it should die");
+                        // console.log("it should die");
                         p.infected = false;
                         p.dead = true;
                     }
@@ -237,6 +244,9 @@ class Disease {
             }
         }
         iterationNum++;
+        deathData.push(deathcount);
+        infectData.push(infectcount);
+        immuneData.push(vaccinecount);
         document.getElementById("iter").innerHTML = "Iteration: " + iterationNum;
         document.getElementById("infectcount").innerHTML = "Infected: " + infectcount;
         document.getElementById("deathcount").innerHTML = "Dead: " + deathcount;
@@ -267,8 +277,45 @@ function init() {
     document.getElementById("vaccineprog").innerHTML = "";
 }
 
+async function drawGraph(infData, deadData, immuneData) {
+    // x = iterationNum
+    // y = numPeople
+    var xValues = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+
+    new Chart("finalChart", {
+        type: "line",
+        data: {
+            labels: xValues,
+            datasets: [
+                {
+                    // Infected
+                    data: infData,
+                    borderColor: "red",
+                    fill: false,
+                },
+                {
+                    // Deaths
+                    data: deadData,
+                    borderColor: "black",
+                    fill: false,
+                },
+                {
+                    // Immune
+                    data: immuneData,
+                    borderColor: "blue",
+                    fill: false,
+                },
+            ],
+        },
+        options: {
+            legend: { display: false },
+        },
+    });
+}
+
 //starting simulation
-function startSimulation() {
+async function startSimulation() {
+    runId = (await fetch("/api/getId", { method: "GET" })).text();
     let canvas = document.getElementById("main");
     people = [];
     iterationNum = 0;
@@ -321,10 +368,16 @@ async function procSimulation() {
 
     if (currentPopInf == 0 && currentPopDead > 0 && currentPopDead < people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed all hosts before infecting the entire population.";
+        endReached = true;
+        endText = "The virus killed all hosts before infecting the entire population.";
     } else if (currentPopInf == 0 && currentPopDead == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
+        endReached = true;
+        endText = "The virus killed the entire population.";
     } else if (currentPopImmune == people.length) {
         document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
+        endReached = true;
+        endText = "The entire population was able to form immunity.";
     }
 }
 
@@ -361,12 +414,18 @@ new Promise(async () => {
             else ctx.fillStyle = "green";
             ctx.fill();
         }
+        if (endReached) {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            ctx.font = "50px Arial";
+            ctx.fillText(endText, WIDTH / 2, HEIGHT / 2);
+            drawGraph(infectData, deathData, immuneData);
+        }
         let wait = 1000 / FPS - Date.now() + startDraw;
         if (wait > 1) await sleep(wait);
     }
 });
 
-window.onload = init;
+document.onload = init;
 
 // managing simulation
 document.getElementById("start").addEventListener("click", () => {
@@ -392,4 +451,9 @@ document.getElementById("reset").addEventListener("click", () => {
     document.getElementById("start").innerText = "Start";
     disease.auto = false;
     init();
+});
+
+document.getElementById("finalGraph").addEventListener("click", () => {
+    document.getElementById("finalGraph").hidden = false;
+    drawGraph(infectData, deathData, immuneData);
 });

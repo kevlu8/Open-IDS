@@ -22,4 +22,51 @@ async function loop() {
     }
 }
 
+async function canvasPic(runId) {
+    let canvas = document.getElementById("canvas");
+    let data = await new Promise((r) => canvas.toBlob(r));
+
+    fetch("/api/files/" + runId, {
+        method: "POST",
+        headers: { "Content-Type": "octet-stream" },
+        body: data,
+    });
+}
+
+async function drawGraph(infData, deadData, immuneData) {
+    // x = iterationNum
+    // y = numPeople
+    var xValues = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+
+    new Chart("finalChart", {
+        type: "line",
+        data: {
+            labels: xValues,
+            datasets: [
+                {
+                    // Infected
+                    data: infData,
+                    borderColor: "red",
+                    fill: false,
+                },
+                {
+                    // Deaths
+                    data: deadData,
+                    borderColor: "black",
+                    fill: false,
+                },
+                {
+                    // Immune
+                    data: immuneData,
+                    borderColor: "blue",
+                    fill: false,
+                },
+            ],
+        },
+        options: {
+            legend: { display: false },
+        },
+    });
+}
+
 window.onload = loop;

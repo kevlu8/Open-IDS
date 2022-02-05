@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Infectious disease simulation">
     <title>Open-IDS</title>
-
+    <script src="Chart.js"></script>
+    <script src="other.js" defer></script>
+    <script src="script.js" defer></script>
     <link rel="stylesheet" type="text/css" href="style.css" />
 
     <!-- Open Graph -->
@@ -20,17 +22,14 @@
 
     <!-- Icon -->
     <link rel="icon" href="/icon.ico">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway&family=Roboto+Mono:wght@100&display=swap"
-        rel="stylesheet">
 </head>
 
 <body>
     <canvas id="main"></canvas>
-    <script src="script.js" defer></script>
     <!-- Make a sidebar for the parameters -->
+    <div id="endscreen">
+
+    </div>
     <div id="sidebar">
         <div id="parameters">
             <h3>Parameters</h3>
@@ -87,6 +86,7 @@
             <button id="start">Start</button>
             <button id="next">Next</button>
             <button id="reset">End</button>
+            <button id="graph">Create Graph</button>
             <br><br><br>
             <h3 id="iter"></h3>
             <h3 id="infectcount"></h3>
@@ -95,7 +95,7 @@
             <h3 id="vaccineprog"></h3>
         </div>
     </div>
-    <script src="other.js" defer></script>
+    <canvas hidden="true" id="finalChart" style="width:100%;max-width:700px"></canvas>
 </body>
 
 </html>

@@ -12,8 +12,6 @@ canvas {
 
 #sidebar {
     display: inline-block;
-    position: absolute;
     margin: 1%;
-    position: absolute;
     z-index: 10;
 }
