@@ -1,7 +1,6 @@
 "use strict";
 
-const FPS = 30;
-var canvas;
+const FPS = 15;
 
 var people = [];
 let iterationNum = 0;
@@ -25,9 +24,10 @@ var currentSettings = new UserSettings(2, 9, 60, 10, true, 1, 1, 10 /* false */)
 class Person {
     closestNeighbours = [];
 
-    constructor(x, y, infected = false, immune = false) {
+    constructor(x, y, infected = false, immune = false, dead = false) {
         this.infected = infected;
         this.immune = immune;
+        this.dead = dead;
         this.x = x;
         this.y = y;
     }
@@ -82,13 +82,20 @@ async function sleep(ms) {
 }
 
 setInterval(() => {
+    let canvas = document.getElementById("main");
     let ctx = canvas.getContext("2d");
     for (let p of people) {
-        ctx.fillCircle(p.x, p.y);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.min(window.clientWidth, window.clientHeight) * 0.01, 0, 2 * Math.PI);
+        if (p.infected) ctx.fillStyle = "red";
+        else if (p.dead) ctx.fillStyle = "black";
+        else ctx.fillStyle = "green";
+        ctx.fill();
     }
 }, 1000 / FPS);
 
 async function main() {
+    let canvas = document.getElementById("main");
     for (let i = 0; i < currentSettings.numPeople; i++) {
         let x = Math.random() * canvas.width,
             y = Math.random() * canvas.height;
@@ -97,7 +104,7 @@ async function main() {
 }
 
 async function init() {
-    canvas = document.getElementById("main");
+    let canvas = document.getElementById("main");
     canvas.width = window.clientWidth;
     canvas.height = window.clientHeight;
 }
