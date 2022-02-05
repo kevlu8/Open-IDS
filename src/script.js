@@ -107,8 +107,8 @@ async function main() {
 
 async function init() {
     let canvas = document.getElementById("main");
-    WIDTH = Math.min(window.innerWidth * 0.75, window.innerHeight);
-    HEIGHT = Math.min(window.innerWidth * 0.75, window.innerHeight);
+    WIDTH = window.innerWidth * 0.8;
+    HEIGHT = window.innerHeight * 0.9;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
 }

@@ -6,11 +6,10 @@
 canvas {
     background-color: #fff;
     border: 1px solid #000;
-    /* box-shadow: 0 0 1px rgba(0,0,0,0.2); */
-    /* display: block; */
-    /* margin: 0 auto; */
-    /* max-width: 800px; */
-    /* padding: 0; */
-    /* position: relative; */
-    /* width: 100%; */
+}
+
+#sidebar {
+    display: inline-block;
+    position: absolute;
+    margin: 1%;
 }
