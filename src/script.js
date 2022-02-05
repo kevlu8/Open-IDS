@@ -10,17 +10,20 @@ class Person {
 }
 
 class Disease {
-    async async constructor(pSpread, pRecovery, pDeath) {
+    async constructor(pSpread, pRecovery, pDeath) {
         this.pSpread = pSpread;
         this.pRecovery = pRecovery;
         this.pDeath = pDeath;
     }
 
-    async function iter(People) {
+    async iter(people) {
         // People is an array of class Person
         // Iterate over each person
-        for (let i = 0; i < People.length(); i++) {
-            
+        // Actual infection rate is calculates as some function of distance + infection rate
+        for (let i = 0; i < people.length(); i++) {
+            if (people[i].infected) {
+                
+            }
         }
     }
 }
@@ -40,9 +43,5 @@ async function main() {
 }
 
 window.onload = main;
-  let canvas = document.getElementById("main");
-  let ctx = canvas.getContext("2d");
-  ctx.fillRect(0, 0, 100, 100);
-}
 
 window.onload = main;
