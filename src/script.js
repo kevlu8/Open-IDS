@@ -91,7 +91,9 @@ class Person {
         }
     }
 
-    changedest(x, y) {
+    changedest() {
+        let x = Math.floor(Math.random() * WIDTH);
+        let y = Math.floor(Math.random() * HEIGHT);
         this.destx = x;
         this.desty = y;
         this.diffx = x - this.x;
@@ -99,10 +101,10 @@ class Person {
         if (Math.abs(this.diffx) > 1 || Math.abs(this.diffy) > 1) {
             if (Math.abs(this.diffx) > Math.abs(this.diffy)) {
                 this.diffy /= Math.abs(this.diffx);
-                this.diffx /= this.diffx;
+                this.diffx /= Math.abs(this.diffx);
             } else {
                 this.diffx /= Math.abs(this.diffy);
-                this.diffy /= this.diffy;
+                this.diffy /= Math.abs(this.diffy);
             }
         }
     }
@@ -339,7 +341,7 @@ new Promise(async () => {
         let startDraw = Date.now();
         let canvas = document.getElementById("main");
         let ctx = canvas.getContext("2d");
-        //ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
         for (let p of people) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
@@ -357,7 +359,8 @@ new Promise(async () => {
             else ctx.fillStyle = "green";
             ctx.fill();
         }
-        await sleep(1000 / FPS - Date.now() + startDraw);
+        let wait = 1000 / FPS - Date.now() + startDraw;
+        if (wait > 1) await sleep(wait);
     }
 });
 
