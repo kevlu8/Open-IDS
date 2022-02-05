@@ -266,7 +266,7 @@ function main() {
 
 function init() {
     let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.9;
+    WIDTH = window.innerWidth * 0.8;
     HEIGHT = window.innerHeight * 0.9;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
@@ -292,18 +292,21 @@ async function drawGraph(infData, deadData, immuneData) {
                     data: infData,
                     borderColor: "red",
                     fill: false,
+                    backgroundColor: "white",
                 },
                 {
                     // Deaths
                     data: deadData,
-                    borderColor: "black",
+                    borderColor: "grey",
                     fill: false,
+                    backgroundColor: "white",
                 },
                 {
                     // Immune
                     data: immuneData,
                     borderColor: "blue",
                     fill: false,
+                    backgroundColor: "white",
                 },
             ],
         },
@@ -366,10 +369,14 @@ async function procSimulation() {
         vaccine.release(people, done);
     }
 
-    if (currentPopInf == 0 && currentPopDead > 0 && currentPopDead < people.length) {
-        document.getElementById("endscreen").innerHTML = "The virus killed all hosts before infecting the entire population.";
+    if (currentPopInf == 0 && currentPopDead < people.length / 3) {
+        document.getElementById("endscreen").innerHTML = "You've eradicated the virus before it killed 30% of the population! Congrats!";
         endReached = true;
-        endText = "The virus killed all hosts before infecting the entire population.";
+        endText = "You've eradicated the virus before it killed 30% of the population! Congrats!";
+    } else if (currentPopInf == 0 && currentPopDead > people.length / 2) {
+        document.getElementById("endscreen").innerHTML = "The virus killed more than 50% of the population before killing all hosts";
+        endReached = true;
+        endText = "The virus killed more than 50% of the population before killing all hosts";
     } else if (currentPopInf == 0 && currentPopDead == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
         endReached = true;
@@ -378,6 +385,10 @@ async function procSimulation() {
         document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
         endReached = true;
         endText = "The entire population was able to form immunity.";
+    } else if (currentPopInf == 0) {
+        document.getElementById("endscreen").innerHTML = "It went decently, I guess?";
+        endReached = true;
+        endText = "It went decently, I guess?";
     }
 }
 
@@ -417,8 +428,9 @@ new Promise(async () => {
         if (endReached) {
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
             ctx.font = "50px Arial";
+            ctx.textAlign = "center";
             ctx.fillText(endText, WIDTH / 2, HEIGHT / 2);
-            drawGraph(infectData, deathData, immuneData);
+            //drawGraph(infectData, deathData, immuneData);
         }
         let wait = 1000 / FPS - Date.now() + startDraw;
         if (wait > 1) await sleep(wait);

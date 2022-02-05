@@ -10,9 +10,28 @@ canvas {
     cursor: crosshair;
 }
 
-#sidebar {
+/* #sidebar {
     display: inline-block;
     position: absolute;
     margin: 1%;
     z-index: 10;
+} */
+
+#wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+#top {
+    display: flex;
+    flex-direction: row;
+    align-content: stretch;
+}
+
+#sidebar {
+    flex-grow: 1;
+}
+
+#main {
+    flex-grow: 4;
 }
