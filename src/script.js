@@ -10,7 +10,6 @@ let iterationNum = 0, infectcount = 0, deathcount = 0, vaccinecount = 0, vaccine
 let currentSettings;
 let diseas;
 let vaccine;
-let dosecount = 0;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
@@ -33,6 +32,7 @@ class Vaccine {
         this.developmentStart = startTime;
         this.developmentRate = developmentRate;
         this.developmentProgress = 0;
+        let dosecount = 0;
     }
 
     develop(infectedPopPercent /*, population*/) {
@@ -42,22 +42,24 @@ class Vaccine {
                 document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + Math.round(this.developmentProgress) + "%";
             } else {
                 this.developmentProgress = 100;
-                if (dosecount == 0) {
-                    dosecount++;
+                if (this.dosecount == 2) {
+                    return;
+                } else if (this.dosecount == 0) {
+                    this.dosecount = 1;
                     this.developmentProgress = 0;
                     return 1;
                 }
                 else {
-                    dosecount++;
+                    this.dosecount = 2;
                     return 2;
                 }
             }
         }
     }
 
-    release(people, dosenum) {
+    release(people) {
         for (let p of people) {
-            p.vaccinate(dosenum);
+            p.vaccinate(this.dosenum);
         }
     }
 }
@@ -129,7 +131,6 @@ class Disease {
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
                         console.log("trying to infect");
-                        console.log(this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0));
                         if (Math.random() * 100 <= this.pSpread * Math.max(-(p.getDistance(n) ** 2 / (MAXINFECTDIST ** 2)) + 1, 0)) {
                             if (n.immune > 1) {
                                 if (Math.random() * 10 < 1) {
@@ -188,6 +189,9 @@ class Disease {
                         p.dead = true;
                     }
                 }
+            }
+            if (p.immune > 1) {
+                vaccinecount++
             }
             if (p.dead) {
                 deathcount++;
@@ -277,11 +281,23 @@ async function procSimulation() {
     //have loop to call procs if they're too lazy to click "next" button themselves
     await diseas.iter(people);
     let currentPopInf = document.getElementById("infectcount").innerHTML.split(" ")[1];
+    let currentPopDead = document.getElementById("deathcount").innerHTML.split(" ")[1];
+    let currentPopImmune = document.getElementById("vaccinecount").innerHTML.split(" ")[1];
     let infPercent = Math.round(currentPopInf / people.length * 100);
     
     let done = await vaccine.develop(infPercent);
     if (done > 0) {
         vaccine.release(people, done);
+    }
+
+    if (currentPopInf == 0 && currentPopDead > 0 && currentPopDead < people.length) {
+        document.getElementById("endscreen").innerHTML = "The virus killed all hosts before the population was able to develop immunity.";
+    } 
+    else if (currentPopInf == 0 && currentPopDead == people.length) {
+        document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
+    }
+    else if (currentPopInf == people.length) {
+        document.getElementById("endscreen").innerHTML = "The virus infected the entire population.";
     }
 }
 
