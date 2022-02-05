@@ -20,7 +20,7 @@ var disease;
 var vaccine;
 var endscreen;
 var endText;
-var endReached;
+var endReached = false;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
@@ -91,6 +91,8 @@ class Person {
     }
 
     getDistance(person) {
+        if (this.dead) return Infinity;
+        if (person.dead) return Infinity;
         return Math.round(Math.abs(this.x - person.x) + Math.abs(this.y - person.y)) * METRE;
         // return Math.hypot(this.x - person.x, this.y - person.y); is slow
     }
@@ -152,7 +154,9 @@ class Disease {
     async iter(people) {
         (infectcount = 0), (deathcount = 0), (vaccinecount = 0), (vaccineprog = 0);
         for (let p of people) {
+            if (p.dead) continue;
             for (let n of people) {
+                if (n.dead) continue;
                 if (p != n && p.getDistance(n) < MAXINFECTDIST) {
                     p.closestNeighbours.push(n);
                 }
@@ -266,7 +270,7 @@ function main() {
 
 function init() {
     let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.8;
+    WIDTH = window.innerWidth * 0.75;
     HEIGHT = window.innerHeight * 0.9;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
@@ -280,7 +284,10 @@ function init() {
 async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
-    var xValues = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+    var xValues = [];
+    for (let i = 0; i < iterationNum; i++) {
+        xValues.push(i);
+    }
 
     new Chart("finalChart", {
         type: "line",
@@ -351,11 +358,12 @@ async function startSimulation() {
 
     people[Math.floor(Math.random() * people.length)].infected = true; // Patient Zero
     // Start the simulation
-    autoSimulate();
+    procSimulation();
 }
 
 //procing simulation
 async function procSimulation() {
+    let startTime = Date.now();
     //"one proc" -> one cycle (maybe allow user to see simulation in steps or smt)
     //have loop to call procs if they're too lazy to click "next" button themselves
     await disease.iter(people);
@@ -369,15 +377,18 @@ async function procSimulation() {
         vaccine.release(people, done);
     }
 
-    if (currentPopInf == 0 && currentPopDead < people.length / 3) {
-        document.getElementById("endscreen").innerHTML = "You've eradicated the virus before it killed 30% of the population! Congrats!";
+    if (!disease.auto) return;
+
+    disease.auto = false;
+    if (currentPopInf == 0 && deathData[iterationNum] < people.length / 3) {
+        document.getElementById("endscreen").innerHTML = "The virus was eradicated before it could kill 30% of the population.";
         endReached = true;
-        endText = "You've eradicated the virus before it killed 30% of the population! Congrats!";
-    } else if (currentPopInf == 0 && currentPopDead > people.length / 2) {
+        endText = "The virus was eradicated before it could kill 30% of the population.";
+    } else if (currentPopInf == 0 && deathData[iterationNum] > people.length / 2) {
         document.getElementById("endscreen").innerHTML = "The virus killed more than 50% of the population before killing all hosts";
         endReached = true;
         endText = "The virus killed more than 50% of the population before killing all hosts";
-    } else if (currentPopInf == 0 && currentPopDead == people.length) {
+    } else if (currentPopInf == 0 && deathData[iterationNum] == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
         endReached = true;
         endText = "The virus killed the entire population.";
@@ -389,20 +400,23 @@ async function procSimulation() {
         document.getElementById("endscreen").innerHTML = "It went decently, I guess?";
         endReached = true;
         endText = "It went decently, I guess?";
+    } else {
+        disease.auto = true;
+        setTimeout(procSimulation, 1000 / FPS - Date.now() + startTime);
     }
 }
 
-async function autoSimulate() {
-    while (disease.auto) {
-        await sleep(1000 / currentSettings.iterSpeed);
-        procSimulation();
-    }
-}
+// async function autoSimulate() {
+//     while (disease.auto) {
+//         procSimulation();
+//         await sleep(1000 / currentSettings.iterSpeed);
+//     }
+// }
 
 // updating drawing
 new Promise(async () => {
     while (true) {
-        let startDraw = Date.now();
+        let startTime = Date.now();
         let canvas = document.getElementById("main");
         let ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -432,7 +446,7 @@ new Promise(async () => {
             ctx.fillText(endText, WIDTH / 2, HEIGHT / 2);
             //drawGraph(infectData, deathData, immuneData);
         }
-        let wait = 1000 / FPS - Date.now() + startDraw;
+        let wait = 1000 / FPS - Date.now() + startTime;
         if (wait > 1) await sleep(wait);
     }
 });
@@ -451,7 +465,7 @@ document.getElementById("start").addEventListener("click", () => {
     } else if (document.getElementById("start").innerText == "Resume") {
         document.getElementById("start").innerText = "Pause";
         disease.auto = true;
-        autoSimulate();
+        procSimulation();
     }
 });
 
@@ -462,6 +476,7 @@ document.getElementById("next").addEventListener("click", () => {
 document.getElementById("reset").addEventListener("click", () => {
     document.getElementById("start").innerText = "Start";
     disease.auto = false;
+    endReached = false;
     init();
 });
 
