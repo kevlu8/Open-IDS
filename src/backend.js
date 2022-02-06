@@ -5,9 +5,10 @@ app = express();
 
 app.get("/api/getId", (req, res) => {
     try {
-        let id = Math.floor(Math.random() * 900) + 100;
-        while (fs.existsSync(__dirname + "/frames/" + id.toString())) id = Math.floor(Math.random() * 900) + 100;
-        res.send(id.toString());
+        let id = (Math.floor(Math.random() * 900) + 100).toString();
+        while (fs.existsSync(__dirname + "/frames/" + id)) id = (Math.floor(Math.random() * 900) + 100).toString();
+        res.send(id);
+        fs.mkdirSync(id);
     } catch (e) {
         console.err(e);
         res.status(500);

@@ -285,6 +285,8 @@ async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
     let canvas = document.getElementById("main");
+    canvas.width = window.innerWidth * 0.75;
+    canvas.height = window.innerHeight * 0.9;
     let ctx = canvas.getContext("2d");
     let xValues = [];
     for (let i = 0; i < iterationNum; i++) {
@@ -293,7 +295,7 @@ async function drawGraph(infData, deadData, immuneData) {
 
     document.getElementById("start").innerText = "Resume";
     disease.auto = false;
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     new Chart(/*"finalChart"*/ "main", {
         type: "line",
         data: {
