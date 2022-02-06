@@ -14,13 +14,16 @@ var iterationNum = 0,
     infectcount = 0,
     deathcount = 0,
     vaccinecount = 0,
-    vaccineprog = 0;
+    vaccineprog = 0,
+    curecount = 0,
+    cureprog = 0;
 var currentSettings;
 var disease;
 var vaccine;
 var endscreen;
 var endText;
 var endReached = false;
+var graphShowing = false;
 
 class UserSettings {
     constructor(iterSpeed, numPeople, baseInfectionRate, vaccineDevelopedAfterXPercentInfections, antiVaxxers, developmentRate, /*socialDistance,*/ deathRate, recoveryRate /*peopleMove*/) {
@@ -88,6 +91,7 @@ class Person {
         this.desty = y;
         this.diffx = 0;
         this.diffy = 0;
+        this.cursed = false;
     }
 
     getDistance(person) {
@@ -100,6 +104,13 @@ class Person {
     vaccinate(doseNum) {
         if (!this.infected && this.immune < doseNum && !this.antivax) {
             this.immune = doseNum;
+        }
+    }
+
+    cure() {
+        if (!this.dead && this.infected) {
+            this.infected = false;
+            this.cured = true;
         }
     }
 
@@ -169,12 +180,11 @@ class Disease {
             let p = people[i];
             if (!p.dead) {
                 p.move();
-                // console.log("moving");
             }
-            if (p.infected && !p.dead) {
+            if (p.infected && !p.dead && !p.cured) {
                 // infected person tries to infect all neighbors <- bioterrorism at it's finest
                 for (let n of p.closestNeighbours) {
-                    if (!n.infected) {
+                    if (!n.infected && !n.dead && !n.cured) {
                         // attempting to infect uninfected neighbor:
                         // y = -1/25x^2 + 1
                         // baseInfectionRate is the number when x = 0
@@ -213,7 +223,7 @@ class Disease {
                         p.dead = true;
                     }
                 }
-                // "semi-vacinated" (allows virus to penetrate based on size) <- semi permiable lol
+                // "semi-vacinated" (allows virus to penetrate based on size) <- semi permeable lol
                 else if (p.immune == 1) {
                     let roll = Math.round(Math.random() * 100);
                     if (roll < this.pRecovery * 2) {
@@ -256,6 +266,33 @@ class Disease {
         document.getElementById("deathcount").innerHTML = "Dead: " + deathcount;
         document.getElementById("vaccinecount").innerHTML = "Immune: " + vaccinecount;
         document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: " + vaccineprog + "%";
+        document.getElementById("curecount").innerHTML = "Cured: " + curecount;
+        document.getElementById("cureprog").innerHTML = "Cure Progress: " + cureprog + "%";
+    }
+}
+
+class Cure {
+    constructor(startTime, developmentRate) {
+        this.startTime = startTime;
+        this.developmentRate = developmentRate;
+    }
+
+    develop(infectedPopPercent /*, population*/) {
+        if (infectedPopPercent >= this.developmentStart) {
+            if (this.developmentProgress < 100) {
+                this.developmentProgress += this.developmentRate / 50;
+                document.getElementById("cureprog").innerHTML = "Cure Progress: " + Math.round(this.developmentProgress) + "%";
+            } else {
+                this.developmentProgress = 100;
+                return true;
+            }
+        }
+    }
+
+    release(people) {
+        for (let p of people) {
+            p.cure();
+        }
     }
 }
 
@@ -270,8 +307,8 @@ function main() {
 
 function init() {
     let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.75;
-    HEIGHT = window.innerHeight * 0.9;
+    WIDTH = window.innerWidth * 0.8;
+    HEIGHT = window.innerHeight;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     document.getElementById("iter").innerHTML = "";
@@ -284,9 +321,14 @@ function init() {
 async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
+
+    document.querySelector("video").src = "https://openids.tech/api/finish/" + runID;
+
     let canvas = document.getElementById("main");
-    canvas.width = window.innerWidth * 0.75;
-    canvas.height = window.innerHeight * 0.9;
+    WIDTH = window.innerWidth * 0.75;
+    HEIGHT = window.innerHeight;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
     let ctx = canvas.getContext("2d");
     let xValues = [];
     for (let i = 0; i < iterationNum; i++) {
@@ -332,7 +374,7 @@ async function drawGraph(infData, deadData, immuneData) {
 
 //starting simulation
 async function startSimulation() {
-    runId = (await fetch("/api/getId", { method: "GET" })).text();
+    runId = await (await fetch("/api/getId", { method: "GET" })).text();
     let canvas = document.getElementById("main");
     people = [];
     iterationNum = 0;
@@ -385,6 +427,8 @@ async function procSimulation() {
     }
     currentSettings.iterSpeed = document.getElementById("iter-rate").value;
 
+    canvasPic();
+
     if (!disease.auto) return;
 
     disease.auto = false;
@@ -400,7 +444,7 @@ async function procSimulation() {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
         endReached = true;
         endText = "The virus killed the entire population.";
-    } else if (currentPopImmune == people.length) {
+    } else if (immuneData[iterationNum] == people.length) {
         document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
         endReached = true;
         endText = "The entire population was able to form immunity.";
@@ -421,27 +465,29 @@ async function procSimulation() {
 new Promise(async () => {
     while (true) {
         let startTime = Date.now();
-        let canvas = document.getElementById("main");
-        let ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        for (let p of people) {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
-            if (!p.dead) {
-                if (p.immune == 1) {
-                    ctx.strokeStyle = "blue";
-                    ctx.lineWidth = "2";
-                    ctx.stroke();
-                } else if (p.immune == 2) {
-                    ctx.strokeStyle = "blue";
-                    ctx.lineWidth = "5";
-                    ctx.stroke();
+        if (!graphShowing) {
+            let canvas = document.getElementById("main");
+            let ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            for (let p of people) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, Math.min(WIDTH, HEIGHT) * 0.01, 0, 2 * Math.PI);
+                if (!p.dead) {
+                    if (p.immune == 1) {
+                        ctx.strokeStyle = "blue";
+                        ctx.lineWidth = "2";
+                        ctx.stroke();
+                    } else if (p.immune == 2) {
+                        ctx.strokeStyle = "blue";
+                        ctx.lineWidth = "5";
+                        ctx.stroke();
+                    }
                 }
+                if (p.dead) ctx.fillStyle = "grey";
+                else if (p.infected) ctx.fillStyle = "red";
+                else ctx.fillStyle = "green";
+                ctx.fill();
             }
-            if (p.dead) ctx.fillStyle = "grey";
-            else if (p.infected) ctx.fillStyle = "red";
-            else ctx.fillStyle = "green";
-            ctx.fill();
         }
         if (endReached) {
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -463,6 +509,7 @@ document.getElementById("start").addEventListener("click", () => {
         document.getElementById("start").innerText = "Pause";
         init();
         startSimulation();
+        graphShowing = false;
     } else if (document.getElementById("start").innerText == "Pause") {
         if (!endReached) {
             document.getElementById("start").innerText = "Resume";
@@ -470,6 +517,7 @@ document.getElementById("start").addEventListener("click", () => {
         }
     } else if (document.getElementById("start").innerText == "Resume") {
         if (!endReached) {
+            graphShowing = false;
             document.getElementById("start").innerText = "Pause";
             disease.auto = true;
             procSimulation();
@@ -479,11 +527,15 @@ document.getElementById("start").addEventListener("click", () => {
 
 document.getElementById("next").addEventListener("click", () => {
     if (!endReached) {
+        graphShowing = false;
         procSimulation();
     }
 });
 
 document.getElementById("reset").addEventListener("click", () => {
+    fetch("/api/delete/" + reqId, {
+        method: "GET",
+    });
     document.getElementById("start").innerText = "Start";
     disease.auto = false;
     endReached = false;
@@ -491,6 +543,7 @@ document.getElementById("reset").addEventListener("click", () => {
 });
 
 document.getElementById("graph").addEventListener("click", () => {
+    graphShowing = true;
     document.getElementById("finalChart").hidden = false;
     drawGraph(infectData, deathData, immuneData);
 });

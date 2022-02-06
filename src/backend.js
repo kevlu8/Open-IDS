@@ -5,12 +5,23 @@ app = express();
 
 app.get("/api/getId", (req, res) => {
     try {
-        let id = (Math.floor(Math.random() * 900) + 100).toString();
+        let id = (Math.floor(Math.random() * 900000) + 100000).toString();
         while (fs.existsSync(__dirname + "/frames/" + id)) id = (Math.floor(Math.random() * 900) + 100).toString();
         res.send(id);
-        fs.mkdirSync(id);
+        fs.mkdirSync(__dirname + "/frames/" + id);
+        fs.writeFileSync(__dirname + "/frames/" + id + "/numFrames", 0);
     } catch (e) {
-        console.err(e);
+        console.log(e);
+        res.status(500);
+    }
+    res.end();
+});
+
+app.get("/api/delete/*", (req, res) => {
+    try {
+        fs.rmdirSync(__dirname + "/frames/" + req.params[0], { recursive: true, force: true });
+    } catch (e) {
+        console.log(e);
         res.status(500);
     }
     res.end();
@@ -29,7 +40,6 @@ app.get("/api/finish/*", (req, res) => {
         }
     });
     res.sendFile(path.join("frame", req.path.split("/")[1], ".mp4"));
-    fs.rmSync(__dirname + "/frames/" + req.path.split("/")[1], { recursive: true, force: true });
 });
 
 app.post("/api/frames/*", (req, res) => {

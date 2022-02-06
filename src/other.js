@@ -32,7 +32,7 @@ async function updateCount() {
 //     }
 // }
 
-async function canvasPic(runId) {
+async function canvasPic() {
     let canvas = document.getElementById("main");
     let data = await new Promise((r) => canvas.toBlob(r));
 
