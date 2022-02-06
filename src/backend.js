@@ -1,7 +1,8 @@
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
+const ImageDataURI = require("image-data-uri");
 const { exec } = require("child_process");
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
 app = express();
 
 app.get("/api/getId", (req, res) => {
@@ -30,38 +31,35 @@ app.get("/api/delete/*", (req, res) => {
 
 app.get("/api/finish/*", (req, res) => {
     // This is very unsafe, but it's okay for now
-    exec("ffmpeg -framerate 30 -i " + __dirname + "/frames/" + req.params[0] + "/%d.png -c:v libx264 -pix_fmt yuv420p " + __dirname + "/frames/" + req.params[0] + "/out.mp4", (err, stdout, stderr) => {
+    console.log(req.params[0]);
+    exec("ffmpeg -framerate 15 -i " + __dirname + "/frames/" + req.params[0] + "/%d.png -b:v 8M -c:v libx264 -pix_fmt bgr24 " + __dirname + "/frames/" + req.params[0] + "/out.mp4", (err, stdout, stderr) => {
         if (err) {
             console.log(err);
             res.status(500);
             res.end();
-            return;
         } else {
-            res.status(200);
+            res.sendFile(__dirname + "/frames/" + req.params[0] + "/out.mp4");
         }
     });
-    res.sendFile(__dirname + "/frames/" + req.params[0] + "/out.mp4");
 });
 
 app.post("/api/frames/*", (req, res) => {
     // Save the frame that's in req
-    let body = "";
-    req.on("data", (chunk) => {
-        body += chunk;
+    let data = "";
+    req.on("data", (received) => {
+        data += received;
     });
-
     req.on("end", () => {
         try {
-            console.log(Buffer(body).toString("base64"));
             let num = parseInt(fs.readFileSync(__dirname + "/frames/" + req.params[0] + "/numFrames"), 10) + 1;
-            fs.writeFileSync(__dirname + "/frames/" + req.params[0] + "/" + num.toString() + ".png", body);
+            ImageDataURI.outputFile(data, __dirname + "/frames/" + req.params[0] + "/" + num.toString() + ".png");
             fs.writeFileSync(__dirname + "/frames/" + req.params[0] + "/numFrames", num);
         } catch (e) {
             console.log(e);
             res.status(500);
         }
+        res.end();
     });
-    res.end();
 });
 
 app.listen(6969, () => {

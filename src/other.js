@@ -34,17 +34,13 @@ async function updateCount() {
 
 async function canvasPic() {
     let canvas = document.getElementById("main");
-    let data = await new Promise((r) => canvas.toBlob(r));
+    let data = canvas.toDataURL();
 
     fetch("/api/frames/" + runId, {
         method: "POST",
         headers: { "Content-Type": "octet-stream" },
         body: data,
     });
-
-    let f = new FileReader();
-    f.onload = (e) => console.log(e.target.result);
-    f.readAsDataURL(data);
 }
 
 window.onload = updateCount;

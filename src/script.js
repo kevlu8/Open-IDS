@@ -58,7 +58,8 @@ class Vaccine {
             } else {
                 this.developmentProgress = 100;
                 if (this.dosecount == 2) {
-                    return;
+                    document.getElementById("vaccineprog").innerHTML = "Vaccine Progress: 100%";
+                    return 0;
                 } else if (this.dosecount == 0) {
                     this.dosecount = 1;
                     this.developmentProgress = 0;
@@ -73,7 +74,7 @@ class Vaccine {
 
     release(people) {
         for (let p of people) {
-            p.vaccinate(this.dosenum);
+            if (!p.antivax) p.vaccinate(this.dosecount);
         }
     }
 }
@@ -103,7 +104,7 @@ class Person {
     }
 
     vaccinate(doseNum) {
-        if (!this.infected && this.immune < doseNum && !this.antivax) {
+        if (!this.infected && this.immune <= doseNum && !this.antivax) {
             this.immune = doseNum;
         }
     }
@@ -181,8 +182,12 @@ class Disease {
             let p = people[i];
             if (!p.dead) {
                 p.move();
+            } else {
+                deathcount++;
+                continue;
             }
             if (p.infected && !p.dead && !p.cured) {
+                infectcount++;
                 // infected person tries to infect all neighbors <- bioterrorism at it's finest
                 for (let n of p.closestNeighbours) {
                     if (!n.infected && !n.dead && !n.cured) {
@@ -255,12 +260,6 @@ class Disease {
             if (p.cured) {
                 curecount++;
             }
-            if (p.dead) {
-                deathcount++;
-            }
-            if (p.infected) {
-                infectcount++;
-            }
         }
         iterationNum++;
         deathData.push(deathcount);
@@ -313,8 +312,8 @@ function main() {
 
 function init() {
     let canvas = document.getElementById("main");
-    WIDTH = window.innerWidth * 0.8;
-    HEIGHT = window.innerHeight;
+    WIDTH = window.innerWidth * 0.75;
+    HEIGHT = window.innerHeight * 0.99;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     document.getElementById("iter").innerHTML = "";
@@ -322,17 +321,20 @@ function init() {
     document.getElementById("deathcount").innerHTML = "";
     document.getElementById("vaccinecount").innerHTML = "";
     document.getElementById("vaccineprog").innerHTML = "";
+    document.getElementById("curecount").innerHTML = "";
+    document.getElementById("cureprog").innerHTML = "";
 }
 
 async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
 
-    document.querySelector("video").src = "https://openids.tech/api/finish/" + runId;
+    document.querySelector("video").src = "/api/finish/" + runId;
+    document.querySelector("video").hidden = false;
 
     let canvas = document.getElementById("main");
     WIDTH = window.innerWidth * 0.75;
-    HEIGHT = window.innerHeight;
+    HEIGHT = document.getElementById("sidebar").clientHeight + 1;
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     let ctx = canvas.getContext("2d");
@@ -343,8 +345,8 @@ async function drawGraph(infData, deadData, immuneData) {
 
     document.getElementById("start").innerText = "Resume";
     disease.auto = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    new Chart(/*"finalChart"*/ "main", {
+    //ctx.clearRect(0, 0, canvas.width, canvas.height);
+    new Chart("finalChart" /*"main"*/, {
         type: "line",
         data: {
             labels: xValues,
@@ -380,6 +382,7 @@ async function drawGraph(infData, deadData, immuneData) {
 
 //starting simulation
 async function startSimulation() {
+    document.body.style.overflow = "scroll";
     runId = await (await fetch("/api/getId", { method: "GET" })).text();
     let canvas = document.getElementById("main");
     people = [];
@@ -397,14 +400,14 @@ async function startSimulation() {
     );
     console.log(currentSettings);
     let amtAntiVax = (currentSettings.numPeople * currentSettings.antiVaxxers) / 100;
-    for (let i = 1; i < currentSettings.numPeople; i++) {
+    for (let i = 0; i < currentSettings.numPeople; i++) {
         let x = Math.random() * canvas.width,
             y = Math.random() * canvas.height;
 
         if (i < amtAntiVax) {
             people.push(new Person(x, y, 0, true));
         } else {
-            people.push(new Person(x, y, 0, false));
+            people.push(new Person(x, y, 0));
         }
     }
 
@@ -430,6 +433,7 @@ async function procSimulation() {
 
     let done = await vaccine.develop(infPercent);
     if (done > 0) {
+        console.log(done);
         vaccine.release(people, done);
     }
     done = false;
@@ -514,7 +518,7 @@ new Promise(async () => {
     }
 });
 
-document.onload = init;
+document.onload = setTimeout(init, 1);
 
 // managing simulation
 document.getElementById("start").addEventListener("click", () => {
