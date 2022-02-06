@@ -3,7 +3,7 @@ const fs = require("fs");
 const { exec } = require("child_process");
 app = express();
 
-app.get("/getId", (req, res) => {
+app.get("/api/getId", (req, res) => {
     try {
         let id = Math.floor(Math.random() * 900) + 100;
         while (fs.existsSync(__dirname + "/frames/" + id.toString())) id = Math.floor(Math.random() * 900) + 100;
@@ -15,7 +15,7 @@ app.get("/getId", (req, res) => {
     res.end();
 });
 
-app.get("/finish/*", (req, res) => {
+app.get("/api/finish/*", (req, res) => {
     // This is very unsafe, but it's okay for now
     exec("ffmpeg -framerate 30 -i " + req.path + "/%d.png -c:v libx264 -pix_fmt yuv420p /root/Open-IDS/src/frames/out.mp4", (err, stdout, stderr) => {
         if (err) {
@@ -31,7 +31,7 @@ app.get("/finish/*", (req, res) => {
     fs.rmSync(__dirname + "/frames/" + req.path.split("/")[1], { recursive: true, force: true });
 });
 
-app.post("/frames/*", (req, res) => {
+app.post("/api/frames/*", (req, res) => {
     // Save the frame that's in req
     let body = "";
     req.on("data", (chunk) => {
