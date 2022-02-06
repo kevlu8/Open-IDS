@@ -41,6 +41,10 @@ async function canvasPic() {
         headers: { "Content-Type": "octet-stream" },
         body: data,
     });
+
+    let f = new FileReader();
+    f.onload = (e) => console.log(e.target.result);
+    f.readAsDataURL(data);
 }
 
 window.onload = updateCount;

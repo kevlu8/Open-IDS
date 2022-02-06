@@ -20,6 +20,7 @@ var iterationNum = 0,
 var currentSettings;
 var disease;
 var vaccine;
+var cure;
 var endscreen;
 var endText;
 var endReached = false;
@@ -163,11 +164,11 @@ class Disease {
     }
 
     async iter(people) {
-        (infectcount = 0), (deathcount = 0), (vaccinecount = 0), (vaccineprog = 0);
+        (infectcount = 0), (deathcount = 0), (vaccinecount = 0), (vaccineprog = 0), (curecount = 0), (cureprog = 0);
         for (let p of people) {
-            if (p.dead) continue;
+            if (p.dead || p.cured) continue;
             for (let n of people) {
-                if (n.dead) continue;
+                if (n.dead || n.cured) continue;
                 if (p != n && p.getDistance(n) < MAXINFECTDIST) {
                     p.closestNeighbours.push(n);
                 }
@@ -251,9 +252,13 @@ class Disease {
             if (p.immune >= 1) {
                 vaccinecount++;
             }
+            if (p.cured) {
+                curecount++;
+            }
             if (p.dead) {
                 deathcount++;
-            } else if (p.infected) {
+            }
+            if (p.infected) {
                 infectcount++;
             }
         }
@@ -275,6 +280,7 @@ class Cure {
     constructor(startTime, developmentRate) {
         this.startTime = startTime;
         this.developmentRate = developmentRate;
+        this.developmentProgress = 0;
     }
 
     develop(infectedPopPercent /*, population*/) {
@@ -322,7 +328,7 @@ async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
 
-    document.querySelector("video").src = "https://openids.tech/api/finish/" + runID;
+    document.querySelector("video").src = "https://openids.tech/api/finish/" + runId;
 
     let canvas = document.getElementById("main");
     WIDTH = window.innerWidth * 0.75;
@@ -404,6 +410,7 @@ async function startSimulation() {
 
     vaccine = new Vaccine(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
     disease = new Disease(currentSettings.baseInfectionRate, currentSettings.recoveryRate, currentSettings.deathRate);
+    cure = new Cure(currentSettings.vaccineDevelopedAfterXPercentInfections, currentSettings.developmentRate);
 
     people[Math.floor(Math.random() * people.length)].infected = true; // Patient Zero
     // Start the simulation
@@ -425,6 +432,12 @@ async function procSimulation() {
     if (done > 0) {
         vaccine.release(people, done);
     }
+    done = false;
+    done = await cure.develop(infPercent);
+    if (done) {
+        cure.release(people);
+    }
+
     currentSettings.iterSpeed = document.getElementById("iter-rate").value;
 
     canvasPic();
@@ -467,7 +480,7 @@ new Promise(async () => {
         let startTime = Date.now();
         if (!graphShowing) {
             let canvas = document.getElementById("main");
-            let ctx = canvas.getContext("2d");
+            var ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
             for (let p of people) {
                 ctx.beginPath();
@@ -533,7 +546,7 @@ document.getElementById("next").addEventListener("click", () => {
 });
 
 document.getElementById("reset").addEventListener("click", () => {
-    fetch("/api/delete/" + reqId, {
+    fetch("/api/delete/" + runId, {
         method: "GET",
     });
     document.getElementById("start").innerText = "Start";
