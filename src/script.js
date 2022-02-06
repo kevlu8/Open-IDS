@@ -284,12 +284,17 @@ function init() {
 async function drawGraph(infData, deadData, immuneData) {
     // x = iterationNum
     // y = numPeople
-    var xValues = [];
+    let canvas = document.getElementById("main");
+    let ctx = canvas.getContext("2d");
+    let xValues = [];
     for (let i = 0; i < iterationNum; i++) {
         xValues.push(i);
     }
 
-    new Chart("finalChart", {
+    document.getElementById("start").innerText = "Resume";
+    disease.auto = false;
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    new Chart(/*"finalChart"*/ "main", {
         type: "line",
         data: {
             labels: xValues,
@@ -361,7 +366,7 @@ async function startSimulation() {
     procSimulation();
 }
 
-//procing simulation
+// procing simulation
 async function procSimulation() {
     let startTime = Date.now();
     //"one proc" -> one cycle (maybe allow user to see simulation in steps or smt)
@@ -376,18 +381,19 @@ async function procSimulation() {
     if (done > 0) {
         vaccine.release(people, done);
     }
+    currentSettings.iterSpeed = document.getElementById("iter-rate").value;
 
     if (!disease.auto) return;
 
     disease.auto = false;
     if (currentPopInf == 0 && deathData[iterationNum] < people.length / 3) {
-        document.getElementById("endscreen").innerHTML = "The virus was eradicated before it could kill 30% of the population.";
+        document.getElementById("endscreen").innerHTML = "The virus killed less than 30% of the population.";
         endReached = true;
-        endText = "The virus was eradicated before it could kill 30% of the population.";
+        endText = "The virus killed less than 30% of the population.";
     } else if (currentPopInf == 0 && deathData[iterationNum] > people.length / 2) {
-        document.getElementById("endscreen").innerHTML = "The virus killed more than 50% of the population before killing all hosts";
+        document.getElementById("endscreen").innerHTML = "The virus killed more than 50% of the population.";
         endReached = true;
-        endText = "The virus killed more than 50% of the population before killing all hosts";
+        endText = "The virus killed more than 50% of the population.";
     } else if (currentPopInf == 0 && deathData[iterationNum] == people.length) {
         document.getElementById("endscreen").innerHTML = "The virus killed the entire population.";
         endReached = true;
@@ -396,10 +402,6 @@ async function procSimulation() {
         document.getElementById("endscreen").innerHTML = "The entire population was able to form immunity.";
         endReached = true;
         endText = "The entire population was able to form immunity.";
-    } else if (currentPopInf == 0) {
-        document.getElementById("endscreen").innerHTML = "It went decently, I guess?";
-        endReached = true;
-        endText = "It went decently, I guess?";
     } else {
         disease.auto = true;
         setTimeout(procSimulation, 1000 / FPS - Date.now() + startTime);
@@ -441,9 +443,9 @@ new Promise(async () => {
         }
         if (endReached) {
             ctx.clearRect(0, 0, WIDTH, HEIGHT);
-            ctx.font = "50px Arial";
+            ctx.font = "20px Arial";
             ctx.textAlign = "center";
-            ctx.fillText(endText, WIDTH / 2, HEIGHT / 2);
+            ctx.fillText(endText, WIDTH / 2, HEIGHT / 5);
             //drawGraph(infectData, deathData, immuneData);
         }
         let wait = 1000 / FPS - Date.now() + startTime;
@@ -460,17 +462,23 @@ document.getElementById("start").addEventListener("click", () => {
         init();
         startSimulation();
     } else if (document.getElementById("start").innerText == "Pause") {
-        document.getElementById("start").innerText = "Resume";
-        disease.auto = false;
+        if (!endReached) {
+            document.getElementById("start").innerText = "Resume";
+            disease.auto = false;
+        }
     } else if (document.getElementById("start").innerText == "Resume") {
-        document.getElementById("start").innerText = "Pause";
-        disease.auto = true;
-        procSimulation();
+        if (!endReached) {
+            document.getElementById("start").innerText = "Pause";
+            disease.auto = true;
+            procSimulation();
+        }
     }
 });
 
 document.getElementById("next").addEventListener("click", () => {
-    procSimulation();
+    if (!endReached) {
+        procSimulation();
+    }
 });
 
 document.getElementById("reset").addEventListener("click", () => {

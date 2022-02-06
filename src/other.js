@@ -9,28 +9,38 @@ async function updateCount() {
     document.getElementById("vacRate").innerHTML = document.getElementById("vaccine-rate").value;
     document.getElementById("recover").innerHTML = document.getElementById("recovery-rate").value;
     document.getElementById("death").innerHTML = document.getElementById("death-rate").value;
-}
-
-async function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-}
-
-async function loop() {
-    while (true) {
-        await sleep(100);
-        updateCount();
+    if (currentSettings != undefined) {
+        currentSettings.iterSpeed = document.getElementById("iter-rate").value;
+        currentSettings.numPeople = document.getElementById("population").value;
+        currentSettings.baseInfectionRate = document.getElementById("infection-rate").value;
+        currentSettings.vaccineDevelopedAfterXPercentInfections = document.getElementById("vaccine-after").value;
+        currentSettings.antiVaxxers = document.getElementById("anti-vaxxers").value;
+        currentSettings.developmentRate = document.getElementById("vaccine-rate").value;
+        currentSettings.recoveryRate = document.getElementById("recovery-rate").value;
+        currentSettings.deathRate = document.getElementById("death-rate").value;
     }
 }
+
+// async function sleep(ms) {
+//     return new Promise((r) => setTimeout(r, ms));
+// }
+
+// async function loop() {
+//     while (true) {
+//         await sleep(100);
+//         updateCount();
+//     }
+// }
 
 async function canvasPic(runId) {
     let canvas = document.getElementById("canvas");
     let data = await new Promise((r) => canvas.toBlob(r));
 
-    fetch("/api/files/" + runId, {
+    fetch("/api/frames/" + runId, {
         method: "POST",
         headers: { "Content-Type": "octet-stream" },
         body: data,
     });
 }
 
-window.onload = loop;
+window.onload = updateCount;
